@@ -51,8 +51,100 @@ app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
 
 /*
-Your code here
+    ******** Server Routes **********
 */
+app.get('/authorize', (req, res) => {
+	// console.log("\n########\n" );
+	let status = 200
+
+	let clientId = req.query['client_id']
+	let reqScope = req.query['scope']
+	// console.log("clientId + scope *************** > " + req.query['client_id'] + "," + reqScope);
+
+	// check that the clientId exists
+	if(clientId in clients) {
+		status = 200
+
+		// check scope
+		let reqScopes = reqScope.split(" ")
+		if(containsAll(clients[clientId].scopes, reqScopes)) {
+			// console.log("valid clientID and scope: " + clientID + " : " + scope)
+			status = 200
+
+			// store a requestID
+			var reqId = randomString()
+			requests[reqId] = req.query
+			// console.log("*** request ID added (" + reqId + ")")
+			
+			var params = {
+				"client": clients[clientId],
+				"scope": req.query.scope,
+				requestId: reqId
+			}
+			res.status(status)
+			res.render("login", params)
+		}
+		else {
+			status = 401
+		}
+
+	}
+	else {
+		status = 401
+	}
+
+	// complete if something error (!200)
+	if(status != 200) {
+		res.status(status).end()
+	}
+
+  })
+
+ 
+app.post('/approve', (req, res) => {
+	var status = 401
+	
+	// if no u/p let them through 
+	if(!req.body.userName) {
+		status = 200
+	}
+	// verify username/password
+	else if(req.body.userName in users && req.body.password == users[req.body.userName]) {
+		// console.log("u/p = " + req.body.userName + "/" + req.body.password)
+		
+		// print out some stuff related to request
+		/*
+		console.log("reqId = " + reqId)
+		console.log("----\nnum requests = " + Object.keys(requests).length)
+		console.log("requests = " + Object.keys(requests));
+		*/
+		// check if reqID exists
+		if(req.body.requestId in requests) {
+			// delete from requestId requests
+			var clientReq = req.body.requestId
+			delete requests[req.body.requestId]
+			
+			// store in authorization code
+			var authorizationCode = randomString()
+			authorizationCodes[authorizationCode] = {
+				'clientReq' : clientReq,
+				'userName' : req.body.userName
+			}
+
+			// print out the authorizationCodes
+			// var str = JSON.stringify(authorizationCodes, null, 4); // beautiful the string		
+			// console.log("authorizationCodes = " + str); 
+
+			status = 200	
+		}
+	}
+	else {
+		status = 401
+	}
+
+	res.status(status).end()
+})
+
 
 const server = app.listen(config.port, "localhost", function () {
 	var host = server.address().address
