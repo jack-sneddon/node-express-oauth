@@ -1,5 +1,9 @@
 /**
- * Solution - 
+ * OAuth Lab 
+ * 
+ * Solution:
+ * Soham Kamani (sohamkamani)
+ * https://github.com/pluralsight-projects/node-express-oauth/blob/module1-solution/protected-resource.js 
  */
 const express = require("express")
 const bodyParser = require("body-parser")
@@ -34,6 +38,12 @@ app.use(bodyParser.urlencoded({ extended: true }))
 /*
 Your code here
 */
+/*
+	******** Server Routes **********
+*/
+app.get('/user-info', (req, res) => {
+
+})
 
 const server = app.listen(config.port, "localhost", function () {
 	var host = server.address().address

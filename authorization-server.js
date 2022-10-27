@@ -1,3 +1,11 @@
+/**
+ * OAuth Lab 
+ * 
+ * Solution:
+ * Soham Kamani (sohamkamani)
+ * https://github.com/pluralsight-projects/node-express-oauth/blob/module1-solution/authorization-server.js 
+ */
+
 const url = require("url")
 const fs = require("fs")
 const express = require("express")
@@ -102,10 +110,7 @@ app.get('/authorize', (req, res) => {
 
 })
 
-
 app.post('/approve', (req, res) => {
-	var status = 401
-
 	const requestId = req.body.requestId
 	const userName = req.body.userName
 	const password = req.body.password
@@ -138,10 +143,7 @@ app.post('/approve', (req, res) => {
 		'userName': userName
 	}
 
-	// print out the authorizationCodes
-	// console.log("----\nNum authorizationCodes = " + Object.keys(authorizationCodes).length)
-	// var str = JSON.stringify(authorizationCodes, null, 4); // beautiful the string		
-	// console.log("authorizationCodes = " + str); 
+	// logAuthorizationCodes(authorizationCodes)
 
 	// var redirectUri = new URL(clientReq.redirect_uri)
 	var redirectUri = url.parse(clientReq.redirect_uri)
@@ -158,6 +160,61 @@ app.post('/approve', (req, res) => {
 	// res.redirect(redirectUrl) // how do we use WHATWG URL API instead
 	res.redirect(url.format(redirectUri))
 	return
+
+})
+
+app.post('/token', (req, res) => {
+	// check authorization header 
+	// We expect this endpoint to receive an authorization token in the req.headers.authorization property. 
+	// Check if the authorization header exists. If not, return a 401 status.
+	let authCredentials = req.headers.authorization
+
+	if (!authCredentials) {
+		res.status(401).send("Error: user not authorized")
+		return
+	}
+
+	var { clientId, clientSecret } = decodeAuthCredentials(authCredentials)
+	const client = clients[clientId]
+
+	if (!client || clientSecret !== client.clientSecret) {
+		res.status(401).send("Error: user not authorized")
+		return
+	}
+
+	var code = req.body.code
+	// console.log("***** code = " + code)
+	// logAuthorizationCodes(authorizationCodes)
+
+	if (!code || !authorizationCodes[code]) {
+		res.status(401).send("Error: user not authorized")
+		return
+	}
+
+	// issue access token
+	const { clientReq, userName } = authorizationCodes[code]
+	delete authorizationCodes[code]
+
+	const token = jwt.sign(
+		{
+			userName,
+			scope: clientReq.scope,
+		},
+		config.privateKey,
+		{
+			algorithm: "RS256",
+			expiresIn: 300,
+			issuer: "http://localhost:" + config.port,
+		}
+	)
+
+	res.json({
+		access_token: token,
+		token_type: "Bearer",
+		scope: clientReq.scope,
+	})
+
+	res.status(200)
 
 })
 

@@ -29,6 +29,20 @@ function decodeAuthCredentials(auth) {
 	return { clientId, clientSecret }
 }
 
+function logAuthorizationCodes(authorizationCodes) {
+	if(!authorizationCodes) {
+		console.log("no authorization codes provided")
+		return
+	}
+
+	// print out the authorizationCodes
+	console.log("----\nNum authorizationCodes = " + Object.keys(authorizationCodes).length)
+	var str = JSON.stringify(authorizationCodes, null, 4); // beautiful the string		
+	console.log("authorizationCodes = " + str); 
+	return
+}
+
+
 function deleteAllKeys(obj) {
 	Object.keys(obj).forEach((k) => {
 		delete obj[k]
