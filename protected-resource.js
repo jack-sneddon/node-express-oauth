@@ -9,6 +9,7 @@ const express = require("express")
 const bodyParser = require("body-parser")
 const fs = require("fs")
 const { timeout } = require("./utils")
+const jwt = require("jsonwebtoken")
 
 const config = {
 	port: 9002,
@@ -42,6 +43,45 @@ Your code here
 	******** Server Routes **********
 */
 app.get('/user-info', (req, res) => {
+
+	if (!req.headers.authorization) {
+		res.status(401).send("Error: user not authorized")
+		return
+	}
+
+	var bearerToken = req.headers.authorization.slice("bearer ".length)
+	var tokenData = null
+
+	if (!bearerToken) {
+		res.status(401).send("Error: no bearer token provided")
+		return
+	}
+	try {
+		tokenData = jwt.verify(bearerToken, config.publicKey, {
+			algorithms: ["RS256"],
+		})
+
+	}
+	catch {
+		res.status(401).send("Error: client did not provide bearer token")
+		return
+	}
+
+	// make sure we have the data 
+	if (!tokenData) {
+		res.status(401).send("Error: client did not provide token info")
+		return
+	}
+
+	const user = users[tokenData.userName]
+	const userWithRestrictedFields = {}
+	const scope = tokenData.scope.split(" ")
+	for (let i = 0; i < scope.length; i++) {
+		const field = scope[i].slice("permission:".length)
+		userWithRestrictedFields[field] = user[field]
+	}
+
+	res.json(userWithRestrictedFields)
 
 })
 
